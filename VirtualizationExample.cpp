@@ -20,7 +20,14 @@ int ExampleVirtualizedFunction()
         (UINT)VM_Opcode::VM_END_FUNC
     };
 
-    machine->Execute(bytecode, sizeof(bytecode) / sizeof(UINT));
+    if (machine->Execute(bytecode, sizeof(bytecode) / sizeof(UINT)))
+    {
+        cout << "bytecode executed successfully" << endl;
+    }
+    else
+    {
+        cout << "Failed to execute bytecode, please ensure bytecode is properly structured and doesn't reference non-existing registers" << endl;
+    }
 
     return c;
 }
