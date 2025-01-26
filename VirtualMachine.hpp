@@ -1,5 +1,9 @@
 //Experimental code virtualization - AlSch092 @ Github
 #pragma once
+#include <stdint.h>
+#include <mutex>
+#include <unordered_map> //for opcode mappings once we add in randomization
+#include <random>
 
 #ifdef _M_X64  
 #define UINT uint64_t
@@ -33,6 +37,9 @@ public:
             return;
 
         ip = (UINT)&virtualizedCode[0];
+
+        //adding a RAII lock means __try/__except won't compile without errors - it's up to the caller to ensure we don't dereference unallocated memory or execute past the buffer
+        std::lock_guard<std::mutex> lock(execution_mtx); //multi threading could potentially lead to sp/ip corruption, so use a mutex
 
         for (uint32_t i = 0; i < executeSize; i++)
         {
@@ -119,6 +126,8 @@ public:
                 break;
             };
         }
+        
+        ip = 0;
     }
 
 private:
@@ -130,4 +139,8 @@ private:
     UINT sp = 0;
 
     UINT stack[1024]{ 0 };
+
+    std::mutex execution_mtx;
+
+	std::unordered_map<UINT, UINT> opcodeMappings; //for randomizing opcodes
 };

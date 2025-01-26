@@ -1,6 +1,5 @@
 //Experimental code virtualization - AlSch092 @ Github
 #include <iostream>
-#include <stdint.h>
 #include "VirtualMachine.hpp"
 
 using namespace std;
