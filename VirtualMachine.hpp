@@ -52,88 +52,87 @@ public:
 
             switch (vm_opcode)
             {
-                case VM_Opcode::VM_PUSH: //push = write to stack, increment sp
-                    stack[sp++] = *(UINT*)ip;
-                    ip += sizeof(UINT);
-                    break;
+            case VM_Opcode::VM_PUSH: //push = write to stack, increment sp
+                stack[sp++] = *(UINT*)ip;
+                ip += sizeof(UINT);
+                break;
 
-                case VM_Opcode::VM_POP:
-                    sp--;
-                    break;
+            case VM_Opcode::VM_POP:
+                sp--;
+                break;
 
-                case VM_Opcode::VM_ADD: //arithmetic operations (+,-,*,/) pop two values from the stack and place the result in the into stack's sp index
-                {
-                    UINT b = stack[--sp];
-                    UINT a = stack[--sp];
-                    stack[sp] = a + b;
-                } break;
+            case VM_Opcode::VM_ADD: //arithmetic operations (+,-,*,/) pop two values from the stack and place the result in the into stack's sp index
+            {
+                UINT b = stack[--sp];
+                UINT a = stack[--sp];
+                stack[sp] = a + b;
+            } break;
 
-                case VM_Opcode::VM_SUB:
-                {
-                    UINT b = stack[--sp];
-                    UINT a = stack[--sp];
-                    stack[sp] = a - b;
-                } break;
+            case VM_Opcode::VM_SUB:
+            {
+                UINT b = stack[--sp];
+                UINT a = stack[--sp];
+                stack[sp] = a - b;
+            } break;
 
-                case VM_Opcode::VM_MUL:
-                {
-                    UINT b = stack[--sp];
-                    UINT a = stack[--sp];
-                    stack[sp] = a * b;
-                } break;
+            case VM_Opcode::VM_MUL:
+            {
+                UINT b = stack[--sp];
+                UINT a = stack[--sp];
+                stack[sp] = a * b;
+            } break;
 
-                case VM_Opcode::VM_DIV:
-                {
-                    UINT b = stack[--sp];
-                    UINT a = stack[--sp];
-                    stack[sp] = a / b;
-                } break;
+            case VM_Opcode::VM_DIV:
+            {
+                UINT b = stack[--sp];
+                UINT a = stack[--sp];
+                stack[sp] = a / b;
+            } break;
 
-                case VM_Opcode::VM_MOV_REGISTER_TO_REGISTER: // ex. mov 0, 1   (move register 1 into register 0, similar to mov ax,bx)
-                {
-                    UINT lhs_index = *(UINT*)ip;
-                    ip += sizeof(UINT);
+            case VM_Opcode::VM_MOV_REGISTER_TO_REGISTER: // ex. mov 0, 1   (move register 1 into register 0, similar to mov ax,bx)
+            {
+                UINT lhs_index = *(UINT*)ip;
+                ip += sizeof(UINT);
 
-                    UINT rhs_index = *(UINT*)ip;
-                    ip += sizeof(UINT);
+                UINT rhs_index = *(UINT*)ip;
+                ip += sizeof(UINT);
 
-                    if (lhs_index < MAX_REGISTERS && rhs_index < MAX_REGISTERS)
-                        registers[lhs_index] = registers[rhs_index];
-                    else
-                        return false; //invalid register index
-                } break;
+                if (lhs_index < MAX_REGISTERS && rhs_index < MAX_REGISTERS)
+                    registers[lhs_index] = registers[rhs_index];
+                else
+                    return false; //invalid register index
+            } break;
 
-                case VM_Opcode::VM_MOV_IMMEDIATE_TO_REGISTER: //ex. mov ax, 12345678
-                {
-                    UINT register_index = *(UINT*)ip; //should be 0 through MAX_REGISTERS-1 (0-indexed)
-                    ip += sizeof(UINT);
+            case VM_Opcode::VM_MOV_IMMEDIATE_TO_REGISTER: //ex. mov ax, 12345678
+            {
+                UINT register_index = *(UINT*)ip; //should be 0 through MAX_REGISTERS-1 (0-indexed)
+                ip += sizeof(UINT);
 
-                    UINT value = *(UINT*)ip;
-                    ip += sizeof(UINT);
+                UINT value = *(UINT*)ip;
+                ip += sizeof(UINT);
 
-				    if (register_index < MAX_REGISTERS)
-                        registers[register_index] = value;
-                    else
-					    return false; //invalid register index
+		if (register_index < MAX_REGISTERS)
+                    registers[register_index] = value;
+                else
+		    return false; //invalid register index
+            } break;
 
-                } break;
+            case VM_Opcode::VM_GET_TOP_STACK: // mov myVar, [sp]
+            {
+                UINT varAddress = *(UINT*)ip;
+                ip += sizeof(UINT);
+                *(UINT*)varAddress = stack[sp];
+            }break;
 
-                case VM_Opcode::VM_GET_TOP_STACK: // mov myVar, [sp]
-                {
-                    UINT varAddress = *(UINT*)ip;
-                    ip += sizeof(UINT);
-                    *(UINT*)varAddress = stack[sp];
-                }break;
+            case VM_Opcode::VM_HALT: //do nothing
+                break;
 
-                case VM_Opcode::VM_HALT: //do nothing
-                    break;
+            case VM_Opcode::VM_END_FUNC: //since many opcodes increment IP, our executeSize won't map directly to the number of UINT's in the bytecode
+                i = executeSize;
+                break;
 
-                case VM_Opcode::VM_END_FUNC: //since many opcodes increment IP, our executeSize won't map directly to the number of UINT's in the bytecode
-                    i = executeSize;
-                    break;
-
-                default: //opcode unknown
-                    break;
+            default: //opcode unknown
+                break;
             };
         }
         
@@ -153,5 +152,5 @@ private:
 
     std::mutex execution_mtx;
 
-	std::unordered_map<UINT, UINT> opcodeMappings; //for randomizing opcodes
+    std::unordered_map<UINT, UINT> opcodeMappings; //for randomizing opcodes
 };
