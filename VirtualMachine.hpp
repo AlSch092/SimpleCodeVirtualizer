@@ -7,6 +7,12 @@
 
 #ifdef _M_X64  
 #define UINT uint64_t
+
+extern "C"
+{
+    void VM_Call(UINT callAddress, UINT numParameters); //asm stub for VM_CALL opcode since we can't inline
+}
+
 #else
 #define UINT uint32_t
 #endif
@@ -38,7 +44,7 @@ enum class VM_Opcode : UINT //these can be randomized at runtime on each instanc
 
     VM_STDOUT,
     VM_DBG_BREAK,
-    
+
     VM_NOP,
     VM_END_FUNC //each bytecode block must end with this opcode
 };
@@ -127,10 +133,10 @@ public:
                 UINT value = *(UINT*)ip;
                 ip += sizeof(UINT);
 
-		if (register_index < MAX_REGISTERS)
+                if (register_index < MAX_REGISTERS)
                     registers[register_index] = value;
                 else
-		    return false; //invalid register index
+                    return false; //invalid register index
             } break;
 
             case VM_Opcode::VM_GET_TOP_STACK: // mov myVar, [sp]
@@ -138,6 +144,40 @@ public:
                 UINT varAddress = *(UINT*)ip;
                 ip += sizeof(UINT);
                 *(UINT*)varAddress = stack[sp];
+            }break;
+
+            case VM_Opcode::VM_JMP_OFFSET:
+            {
+				int offset = *(int*)ip;
+                ip += (sizeof(UINT) + offset);
+            }break;
+
+            case VM_Opcode::VM_CALL: //x86 works okay, however in x64, functions with parameters are not supported yet, this will be added shortly
+            {
+                UINT numParameters = *(UINT*)ip;
+				ip += sizeof(UINT);
+                UINT callAddress = *(UINT*)ip;
+
+#ifdef _M_X64  
+                VM_Call(callAddress, numParameters); //parameters need to correctly go into rcx, rdx, r8, r9, [rsp+...]
+#else
+                for (int i = 0; i < numParameters; i++) //x86 calling convention, push parameters onto stack then call
+                {
+					UINT parameter = stack[sp - numParameters + i];
+
+                    __asm { push parameter }
+                }
+
+                __asm
+                {
+                    call callAddress
+                }
+
+                for (int i = 0; i < numParameters; i++)
+                {
+                    __asm { add esp, 4 }
+                }
+#endif
             }break;
 
             case VM_Opcode::VM_NOP: //do nothing
@@ -151,8 +191,12 @@ public:
                 break;
             };
         }
-        
+
         ip = 0;
+
+		for (int i = 0; i < MAX_REGISTERS; i++)
+			registers[i] = 0;
+
         return true;
     }
 
