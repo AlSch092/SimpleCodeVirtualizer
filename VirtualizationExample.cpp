@@ -4,7 +4,9 @@
 
 using namespace std;
 
-VirtualMachine* machine = new VirtualMachine(); //make global instance instead of making each routine need a parameter for this type
+#define DEFAULT_STACK_SIZE 1024
+
+VirtualMachine* machine = new VirtualMachine(DEFAULT_STACK_SIZE); //make global instance instead of making each routine need a parameter for this type
 
 int Virtualized_AddIntegers()
 {

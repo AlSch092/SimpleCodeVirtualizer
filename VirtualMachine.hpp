@@ -4,11 +4,13 @@
 #include <mutex>
 #include <unordered_map> //for opcode mappings once we add in randomization
 #include <random>
+#include <intrin.h>
+#include <iostream>
 
 #define USING_OBFUSCATE //comment this out to disable opcode obfuscation
 
 #ifdef USING_OBFUSCATE
-#define XOR_KEY 0x1234567
+#define XOR_KEY 0x12345678
 #define OBFUSCATE   ^ XOR_KEY
 #define DEOBFUSCATE OBFUSCATE
 #endif
@@ -46,9 +48,11 @@ enum class VM_Opcode : UINT //these can be randomized at runtime on each instanc
 
     VM_GET_TOP_STACK,
 
-    VM_CALL,
+    VM_CALL, //basic __cdecl in x86, x64 only currently works with no parameters in function, but will be fixed soon
     VM_JMP_OFFSET, //modify IP
     VM_JMP_ABSOLUTE, //jump outside of bytecode? might not be feasible in VS x64 since we need to call an asm stub which jumps, which requires atleast one register modification and thus is not a perfect jmp
+
+    VM_CMP,
 
     VM_STDOUT,
     VM_DBG_BREAK,
@@ -60,6 +64,50 @@ enum class VM_Opcode : UINT //these can be randomized at runtime on each instanc
 class VirtualMachine
 {
 public:
+
+    VirtualMachine(int stackSize) : stackSize(stackSize)
+    {
+        if (stack == nullptr)
+            stack = new UINT[stackSize];
+    }
+
+    ~VirtualMachine()
+    {
+		if (stack != nullptr)
+			delete[] stack;
+    }
+
+    void SetStackSize(UINT newSize)
+    {
+        if (newSize == 0)
+        {
+            delete[] this->stack;
+            this->stack = nullptr;
+            this->stackSize = 0;
+            return;
+        }
+
+        UINT* newStack = new (std::nothrow) UINT[newSize];
+
+        if (newStack == nullptr)
+        {
+            std::cerr << "Memory allocation failed for stack resizing!" << std::endl;
+            return;
+        }
+
+        if (this->stack != nullptr)
+        {
+            for (UINT i = 0; i < std::min(this->stackSize, newSize); i++)
+            {
+                newStack[i] = this->stack[i];
+            }
+
+            delete[] this->stack;
+        }
+
+        this->stack = newStack;
+        this->stackSize = newSize;
+    }
 
     /*
         bool Execute(UINT* virtualizedCode, uint32_t executeSize) - executes bytecode
@@ -173,7 +221,7 @@ public:
 #ifdef _M_X64  
                 VM_Call(callAddress, numParameters); //parameters need to correctly go into rcx, rdx, r8, r9, [rsp+...]
 #else
-                for (int i = 0; i < numParameters; i++) //x86 calling convention, push parameters onto stack then call
+                for (int i = 0; i < numParameters; i++) //x86 cdecl calling convention, push parameters onto stack then call
                 {
 					UINT parameter = stack[sp - numParameters + i];
 
@@ -199,6 +247,10 @@ public:
                 i = executeSize;
                 break;
 
+			case VM_Opcode::VM_DBG_BREAK:
+				__debugbreak();
+				break;
+
             default: //opcode unknown
                 break;
             };
@@ -220,9 +272,10 @@ private:
     UINT ip = 0;
     UINT sp = 0;
 
-    UINT stack[1024]{ 0 };
+    UINT* stack = nullptr;
+    UINT stackSize = 0;
 
     std::mutex execution_mtx;
 
-    std::unordered_map<UINT, UINT> opcodeMappings; //for randomizing opcodes
+    std::unordered_map<UINT, UINT> opcodeMappings; //for randomizing opcodes, will be implemented soon
 };
