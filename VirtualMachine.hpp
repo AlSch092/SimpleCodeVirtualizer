@@ -5,6 +5,14 @@
 #include <unordered_map> //for opcode mappings once we add in randomization
 #include <random>
 
+#define USING_OBFUSCATE
+
+#ifdef USING_OBFUSCATE
+#define XOR_KEY 0x1234567
+#define OBFUSCATE   ^ XOR_KEY
+#define DEOBFUSCATE OBFUSCATE
+#endif
+
 #ifdef _M_X64  
 #define UINT uint64_t
 
@@ -71,6 +79,10 @@ public:
         {
             VM_Opcode vm_opcode = *(VM_Opcode*)ip;
             ip += sizeof(UINT);
+
+        #ifdef USING_OBFUSCATE
+            vm_opcode = (VM_Opcode)((UINT)vm_opcode DEOBFUSCATE);
+        #endif
 
             switch (vm_opcode)
             {

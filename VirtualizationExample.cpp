@@ -11,6 +11,16 @@ int Virtualized_AddIntegers()
     UINT a = 10, b = 15;
     UINT c = 0;
 
+#ifdef USING_OBFUSCATE
+    UINT bytecode[] //while less space efficient, using default int size for each element instead of uint8_t allow us to pass local variables into the bytecode directly
+    {
+        (UINT)VM_Opcode::VM_PUSH OBFUSCATE, a ,  //only opcodes should be obfuscated right now
+        (UINT)VM_Opcode::VM_PUSH OBFUSCATE, b ,
+        (UINT)VM_Opcode::VM_ADD OBFUSCATE,
+        (UINT)VM_Opcode::VM_GET_TOP_STACK OBFUSCATE, (UINT)&c,
+        (UINT)VM_Opcode::VM_END_FUNC OBFUSCATE
+    };
+#else
     UINT bytecode[] //while less space efficient, using default int size for each element instead of uint8_t allow us to pass local variables into the bytecode directly
     {
         (UINT)VM_Opcode::VM_PUSH, a,
@@ -19,6 +29,7 @@ int Virtualized_AddIntegers()
         (UINT)VM_Opcode::VM_GET_TOP_STACK, (UINT)& c,
         (UINT)VM_Opcode::VM_END_FUNC
     };
+#endif
 
     if (machine->Execute(bytecode, sizeof(bytecode) / sizeof(UINT)))
     {
@@ -42,12 +53,21 @@ void Virtualized_CallRoutine()
     UINT a = 1000;
     UINT callAddress = (UINT) & Virtualized_CalledRoutine;
 
+#ifdef USING_OBFUSCATE
+    UINT bytecode[] //while less space efficient, using default int size for each element instead of uint8_t allow us to pass local variables into the bytecode directly
+    {
+        (UINT)VM_Opcode::VM_PUSH OBFUSCATE, a,
+        (UINT)VM_Opcode::VM_CALL OBFUSCATE, 1, callAddress,
+        (UINT)VM_Opcode::VM_END_FUNC OBFUSCATE
+    };
+#else
     UINT bytecode[] //while less space efficient, using default int size for each element instead of uint8_t allow us to pass local variables into the bytecode directly
     {
         (UINT)VM_Opcode::VM_PUSH, a,
         (UINT)VM_Opcode::VM_CALL, 1, callAddress,
         (UINT)VM_Opcode::VM_END_FUNC
     };
+#endif
 
     if (machine->Execute(bytecode, sizeof(bytecode) / sizeof(UINT)))
     {
