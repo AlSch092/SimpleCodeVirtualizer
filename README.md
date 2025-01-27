@@ -11,4 +11,4 @@ More information will be added here as the project is developed further. Anyone 
 
 ## Limitations & Downsides
 - Since Visual Studio in x64 does not allow inline asm, certain opcodes become more difficult to implement, such as `VM_CALL` and `VM_JMP`
-- Bytecode is large in size, each opcode & LHS/RHS values are 4/8 bytes each depending on whether you compile in 64 bit or 32
+- Bytecode is large in size, each opcode & LHS/RHS values are 4/8 bytes each depending on whether you compile in 32-bit or 64-bit
