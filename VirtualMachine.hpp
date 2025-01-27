@@ -39,7 +39,7 @@ enum class VM_Opcode : UINT //these can be randomized at runtime on each instanc
     VM_STDOUT,
     VM_DBG_BREAK,
     
-    VM_HALT,
+    VM_NOP,
     VM_END_FUNC //each bytecode block must end with this opcode
 };
 
@@ -140,7 +140,7 @@ public:
                 *(UINT*)varAddress = stack[sp];
             }break;
 
-            case VM_Opcode::VM_HALT: //do nothing
+            case VM_Opcode::VM_NOP: //do nothing
                 break;
 
             case VM_Opcode::VM_END_FUNC: //since many opcodes increment IP, our executeSize won't map directly to the number of UINT's in the bytecode
