@@ -15,16 +15,32 @@ enum class VM_Opcode : UINT //these can be randomized at runtime on each instanc
 {
     VM_PUSH,
     VM_POP,
-    VM_ADD,
+
+    VM_ADD, //int
     VM_SUB,
     VM_MUL,
     VM_DIV,
-    VM_MOVE,
+
+    VM_FL_ADD, //float
+    VM_FL_SUB,
+    VM_FL_MUL,
+    VM_FL_DIV,
+
+    VM_MOVE, //move address to address
     VM_MOV_REGISTER_TO_REGISTER,
     VM_MOV_IMMEDIATE_TO_REGISTER,
+
     VM_GET_TOP_STACK,
+
+    VM_CALL,
+    VM_JMP_OFFSET, //modify IP
+    VM_JMP_ABSOLUTE, //jump outside of bytecode? might not be feasible in VS x64 since we need to call an asm stub which jumps, which requires atleast one register modification and thus is not a perfect jmp
+
+    VM_STDOUT,
+    VM_DBG_BREAK,
+    
     VM_HALT,
-    VM_END_FUNC
+    VM_END_FUNC //each bytecode block must end with this opcode
 };
 
 class VirtualMachine
