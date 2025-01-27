@@ -5,7 +5,7 @@
 #include <unordered_map> //for opcode mappings once we add in randomization
 #include <random>
 
-#define USING_OBFUSCATE
+#define USING_OBFUSCATE //comment this out to disable opcode obfuscation
 
 #ifdef USING_OBFUSCATE
 #define XOR_KEY 0x1234567
