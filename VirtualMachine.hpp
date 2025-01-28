@@ -240,6 +240,13 @@ public:
 #endif
             }break;
 
+            case VM_Opcode::VM_STDOUT:
+            {
+				UINT textAddress = *(UINT*)ip;
+				ip += sizeof(UINT);
+				std::cout << (const char*)textAddress << std::endl;
+            }break;
+
             case VM_Opcode::VM_NOP: //do nothing
                 break;
 

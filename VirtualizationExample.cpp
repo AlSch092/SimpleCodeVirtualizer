@@ -8,6 +8,9 @@ using namespace std;
 
 VirtualMachine* machine = new VirtualMachine(DEFAULT_STACK_SIZE); //make global instance instead of making each routine need a parameter for this type
 
+/*
+	Virtualized_AddIntegers - test for VM_PUSH, VM_ADD, VM_GET_TOP_STACK opcodes
+*/
 int Virtualized_AddIntegers()
 {
     UINT a = 10, b = 15;
@@ -35,7 +38,7 @@ int Virtualized_AddIntegers()
 
     if (machine->Execute(bytecode, sizeof(bytecode) / sizeof(UINT)))
     {
-        cout << "bytecode executed successfully" << endl;
+        cout << "Virtualized_AddIntegers - bytecode executed successfully" << endl;
     }
     else
     {
@@ -45,25 +48,62 @@ int Virtualized_AddIntegers()
     return c;
 }
 
-void Virtualized_CalledRoutine(int val) //routine called by Virtualized_CallRoutine
+/*
+	Virtualized_StdOut - test for VM_STDOUT opcode
+*/
+void Virtualized_StdOut()
 {
-	cout << "Hello from called routine - parameter val=" << val << endl;
+    const char* text = "Hello from called routine";
+
+#ifdef USING_OBFUSCATE
+    UINT bytecode[]
+    {
+        (UINT)VM_Opcode::VM_STDOUT OBFUSCATE, (UINT)text,
+        (UINT)VM_Opcode::VM_END_FUNC OBFUSCATE
+    };
+#else
+    UINT bytecode[]
+    {
+        (UINT)VM_Opcode::VM_STDOUT, (UINT)&text,
+        (UINT)VM_Opcode::VM_END_FUNC
+    };
+#endif
+
+    if (machine->Execute(bytecode, sizeof(bytecode) / sizeof(UINT)))
+    {
+        cout << "Virtualized_CalledRoutine - bytecode executed successfully" << endl;
+    }
+    else
+    {
+        cout << "Failed to execute bytecode, please ensure bytecode is properly structured and doesn't reference non-existing registers" << endl;
+    }
 }
 
+/*
+    Virtualized_CalledRoutine - routine to be called by Virtualized_CallRoutine
+*/
+void Virtualized_CalledRoutine(int val) //routine called by Virtualized_CallRoutine
+{
+    cout << "Hello from called routine - parameter val=" << val << endl;
+}
+
+/*
+	Virtualized_CallRoutine - test for VM_CALL opcode
+*/
 void Virtualized_CallRoutine()
 {
-    UINT a = 1000;
+    UINT a = 1000; //example parameter to be used in `Virtualized_CalledRoutine` to show that VM_CALL works
     UINT callAddress = (UINT) & Virtualized_CalledRoutine;
 
 #ifdef USING_OBFUSCATE
     UINT bytecode[] //while less space efficient, using default int size for each element instead of uint8_t allow us to pass local variables into the bytecode directly
     {
         (UINT)VM_Opcode::VM_PUSH OBFUSCATE, a,
-        (UINT)VM_Opcode::VM_CALL OBFUSCATE, 1, callAddress,
+        (UINT)VM_Opcode::VM_CALL OBFUSCATE, 1, callAddress, //1 parameter
         (UINT)VM_Opcode::VM_END_FUNC OBFUSCATE
     };
 #else
-    UINT bytecode[] //while less space efficient, using default int size for each element instead of uint8_t allow us to pass local variables into the bytecode directly
+    UINT bytecode[]
     {
         (UINT)VM_Opcode::VM_PUSH, a,
         (UINT)VM_Opcode::VM_CALL, 1, callAddress,
@@ -73,7 +113,7 @@ void Virtualized_CallRoutine()
 
     if (machine->Execute(bytecode, sizeof(bytecode) / sizeof(UINT)))
     {
-        cout << "bytecode executed successfully" << endl;
+        cout << "Virtualized_CallRoutine - bytecode executed successfully" << endl;
     }
     else
     {
@@ -88,6 +128,8 @@ int main()
     cout << "result=" << result << " after adding `a` to `b`" << endl;
 
     Virtualized_CallRoutine();
+
+    Virtualized_StdOut();
 
     return 0;
 }
