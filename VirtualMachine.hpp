@@ -189,7 +189,7 @@ public:
                 memcpy((void*)&a, (const void*)&stack[--sp], sizeof(float));
                 
                 float c = a + b;
-				memcpy((void*)&stack[sp], &c, sizeof(float));
+		memcpy((void*)&stack[sp], &c, sizeof(float));
             }break;
 
             case VM_Opcode::VM_FL_SUB:
@@ -224,11 +224,11 @@ public:
                 float a = 0;
                 memcpy((void*)&a, (const void*)&stack[--sp], sizeof(float));
 
-				if (b == 0)
-				{
-					std::cerr << "Division by zero error in bytecode!" << std::endl;
-					return false;
-				}
+		if (b == 0)
+		{
+			std::cerr << "Division by zero error in bytecode!" << std::endl;
+			return false;
+		}
 
                 float c = a / b;
                 memcpy((void*)&stack[sp], &c, sizeof(float));
