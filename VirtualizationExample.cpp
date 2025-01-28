@@ -13,8 +13,7 @@ VirtualMachine* machine = new VirtualMachine(DEFAULT_STACK_SIZE); //make global 
 */
 int Virtualized_AddIntegers()
 {
-    UINT a = 10, b = 15;
-    UINT c = 0;
+    UINT a = 10, b = 15, c = 0;
 
 #ifdef USING_OBFUSCATE
     UINT bytecode[] //while less space efficient, using default int size for each element instead of uint8_t allow us to pass local variables into the bytecode directly
@@ -39,6 +38,45 @@ int Virtualized_AddIntegers()
     if (machine->Execute(bytecode, sizeof(bytecode) / sizeof(UINT)))
     {
         cout << "Virtualized_AddIntegers - bytecode executed successfully" << endl;
+    }
+    else
+    {
+        cout << "Failed to execute bytecode, please ensure bytecode is properly structured and doesn't reference non-existing registers" << endl;
+    }
+
+    return c;
+}
+
+float Virtualized_AddFloat()
+{
+    float a = 3.1415, b = 1.10, c = 0;
+
+#ifdef USING_OBFUSCATE
+    UINT bytecode[]
+    {
+        (UINT)VM_Opcode::VM_PUSH OBFUSCATE, (UINT)0 ,  //only opcodes should be obfuscated right now
+        (UINT)VM_Opcode::VM_PUSH OBFUSCATE, (UINT)0 ,
+        (UINT)VM_Opcode::VM_FL_ADD OBFUSCATE,
+        (UINT)VM_Opcode::VM_GET_TOP_STACK OBFUSCATE, (UINT)&c,
+        (UINT)VM_Opcode::VM_END_FUNC OBFUSCATE
+    };
+#else
+    UINT bytecode[] 
+    {
+        (UINT)VM_Opcode::VM_PUSH, a,
+        (UINT)VM_Opcode::VM_PUSH, b,
+        (UINT)VM_Opcode::VM_ADD,
+        (UINT)VM_Opcode::VM_GET_TOP_STACK, (UINT)&c,
+        (UINT)VM_Opcode::VM_END_FUNC
+    };
+#endif
+
+	memcpy((void*)&bytecode[1], &a, sizeof(float)); //obviously this is not ideal for scalability, hopefully we'll figure out some elegant way to mix types in bytecode
+    memcpy((void*)&bytecode[3], &b, sizeof(float));
+
+    if (machine->Execute(bytecode, sizeof(bytecode) / sizeof(UINT)))
+    {
+        cout << "Virtualized_AddDouble - bytecode executed successfully" << endl;
     }
     else
     {
@@ -126,6 +164,10 @@ int main()
     int result = Virtualized_AddIntegers();
 
     cout << "result=" << result << " after adding `a` to `b`" << endl;
+
+    float result_f = Virtualized_AddFloat();
+
+    cout << "result_f=" << result_f << " after adding `a` to `b`" << endl;
 
     Virtualized_CallRoutine();
 

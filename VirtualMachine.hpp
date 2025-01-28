@@ -49,7 +49,14 @@ enum class VM_Opcode : UINT //these can be randomized at runtime on each instanc
     VM_GET_TOP_STACK,
 
     VM_CALL, //basic __cdecl in x86, x64 only currently works with no parameters in function, but will be fixed soon
-    VM_JMP_OFFSET, //modify IP
+   
+    VM_JL,
+    VM_JLE,
+    VM_JG,
+    VM_JGE,
+    VM_JE,
+    VM_JNE,
+    VM_JMP_OFFSET, //directly modify IP, non-conditional jump
     VM_JMP_ABSOLUTE, //jump outside of bytecode? might not be feasible in VS x64 since we need to call an asm stub which jumps, which requires atleast one register modification and thus is not a perfect jmp
 
     VM_CMP,
@@ -135,10 +142,12 @@ public:
             switch (vm_opcode)
             {
             case VM_Opcode::VM_PUSH: //push = write to stack, increment sp
-                stack[sp++] = *(UINT*)ip;
+            {
+                memcpy((void*)&stack[sp++], (const void*)ip, sizeof(UINT)); //using memcpy allows us to work with both float and int without losing precision
                 ip += sizeof(UINT);
-                break;
+            }  break;
 
+              
             case VM_Opcode::VM_POP:
                 sp--;
                 break;
@@ -170,6 +179,60 @@ public:
                 UINT a = stack[--sp];
                 stack[sp] = a / b;
             } break;
+
+            case VM_Opcode::VM_FL_ADD: //we need to use memcpy for floats to avoid losing precision since our stack is UINT 
+            {
+                float b = 0;
+                memcpy((void*)&b, (const void*)&stack[--sp], sizeof(float));
+
+                float a = 0;
+                memcpy((void*)&a, (const void*)&stack[--sp], sizeof(float));
+                
+                float c = a + b;
+				memcpy((void*)&stack[sp], &c, sizeof(float));
+            }break;
+
+            case VM_Opcode::VM_FL_SUB:
+            {
+                float b = 0;
+                memcpy((void*)&b, (const void*)&stack[--sp], sizeof(float));
+
+                float a = 0;
+                memcpy((void*)&a, (const void*)&stack[--sp], sizeof(float));
+
+                float c = a - b;
+                memcpy((void*)&stack[sp], &c, sizeof(float));
+            }break;
+
+            case VM_Opcode::VM_FL_MUL:
+            {
+                float b = 0;
+                memcpy((void*)&b, (const void*)&stack[--sp], sizeof(float));
+
+                float a = 0;
+                memcpy((void*)&a, (const void*)&stack[--sp], sizeof(float));
+
+                float c = a * b;
+                memcpy((void*)&stack[sp], &c, sizeof(float));
+            }break;
+
+            case VM_Opcode::VM_FL_DIV:
+            {
+                float b = 0;
+                memcpy((void*)&b, (const void*)&stack[--sp], sizeof(float));
+
+                float a = 0;
+                memcpy((void*)&a, (const void*)&stack[--sp], sizeof(float));
+
+				if (b == 0)
+				{
+					std::cerr << "Division by zero error in bytecode!" << std::endl;
+					return false;
+				}
+
+                float c = a / b;
+                memcpy((void*)&stack[sp], &c, sizeof(float));
+            }break;
 
             case VM_Opcode::VM_MOV_REGISTER_TO_REGISTER: // ex. mov 0, 1   (move register 1 into register 0, similar to mov ax,bx)
             {
@@ -206,6 +269,26 @@ public:
                 *(UINT*)varAddress = stack[sp];
             }break;
 
+            case VM_Opcode::VM_CMP: //how do we best implement this, given that someone could pass in two class objects with overloaded comparison operators?
+            {
+                UINT b = stack[--sp];
+                UINT a = stack[--sp];
+
+                if (a == b)
+                {
+					cmp_flag = ComparisonFlag::Equal;
+				}
+				else if (a < b)
+				{
+					cmp_flag = ComparisonFlag::Less;
+				}
+                else
+                {
+                    cmp_flag = ComparisonFlag::Greater;
+                }
+
+            }break;
+                
             case VM_Opcode::VM_JMP_OFFSET:
             {
 				int offset = *(int*)ip;
@@ -285,4 +368,13 @@ private:
     std::mutex execution_mtx;
 
     std::unordered_map<UINT, UINT> opcodeMappings; //for randomizing opcodes, will be implemented soon
+
+    enum ComparisonFlag
+    {
+        Equal,
+        Less,
+        Greater,
+    };
+
+    ComparisonFlag cmp_flag = Equal;
 };
