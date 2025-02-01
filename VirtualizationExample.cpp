@@ -71,8 +71,8 @@ float Virtualized_AddFloat()
     };
 #endif
 
-	memcpy((void*)&bytecode[1], &a, sizeof(float)); //obviously this is not ideal for scalability, hopefully we'll figure out some elegant way to mix types in bytecode
-    memcpy((void*)&bytecode[3], &b, sizeof(float));
+	memcpy((void*)&bytecode[1], &a, sizeof(UINT)); //obviously using memcpy is not ideal for scalability, hopefully we'll figure out some elegant way to mix types in bytecode - possibly union types?
+    memcpy((void*)&bytecode[3], &b, sizeof(UINT));
 
     if (machine->Execute(bytecode, sizeof(bytecode) / sizeof(UINT)))
     {
