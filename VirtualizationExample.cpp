@@ -135,9 +135,11 @@ void Virtualized_CallRoutine()
     UINT b = 2000;
     UINT c = 3000;
     UINT d = 4000;
+    UINT e = 5000; //n-th parameter should go into rsp+20 + n*8
+    UINT f = 6000;
 
-    using CalledRoutineType = void(*)(UINT, UINT, UINT, UINT); //for the sake of testing different # of parameters, we'll use a function template /w parameter pack
-    CalledRoutineType funcPtr_pack = &Virtualized_CalledRoutine<UINT, UINT, UINT, UINT>; //forward declare a function pointer since we're using parameter pack, otherwise we will get a compile error
+    using CalledRoutineType = void(*)(UINT, UINT, UINT, UINT, UINT, UINT); //for the sake of testing different # of parameters, we'll use a function template /w parameter pack
+    CalledRoutineType funcPtr_pack = &Virtualized_CalledRoutine<UINT, UINT, UINT, UINT, UINT, UINT>; //forward declare a function pointer since we're using parameter pack, otherwise we will get a compile error
     UINT callAddress = (UINT) funcPtr_pack;
 
 #ifdef USING_OBFUSCATE
@@ -147,7 +149,9 @@ void Virtualized_CallRoutine()
         (UINT)VM_Opcode::VM_PUSH OBFUSCATE, b,
         (UINT)VM_Opcode::VM_PUSH OBFUSCATE, c,
         (UINT)VM_Opcode::VM_PUSH OBFUSCATE, d,
-        (UINT)VM_Opcode::VM_CALL OBFUSCATE, 4, callAddress, //2 parameters
+        (UINT)VM_Opcode::VM_PUSH OBFUSCATE, e,
+        (UINT)VM_Opcode::VM_PUSH OBFUSCATE, f,
+        (UINT)VM_Opcode::VM_CALL OBFUSCATE, 6, callAddress, //6 parameters
         (UINT)VM_Opcode::VM_END_FUNC OBFUSCATE
     };
 #else

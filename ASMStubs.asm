@@ -3,7 +3,7 @@
 
 .code
 
-VM_Jmp PROC ;  VM_Jmp(UINT callAddress)
+VM_Jmp PROC ;  VM_Jmp(UINT callAddress)  - ** This routine is not finished yet **
 
     jmp rcx
 
@@ -13,7 +13,7 @@ VM_Jmp ENDP
 ; rcx = call addr
 ; rdx = num parameters
 ; r8 = parameter list
-VM_Call PROC
+VM_Call PROC ; working for up to 4 parameters
 
     push rax
     push r11
@@ -21,7 +21,7 @@ VM_Call PROC
     push r13
     mov r11, rcx ; move callAddress into rax, shift all parameters into correct registers
     mov eax, edx ; move num parameters into ax
-    mov r13d, eax
+    mov r13, [rsp+20h]
     mov r12, r8 ;copy parameter list into r12 since we may overwrite r8
     mov rcx, r8
     mov rdx, r9
@@ -48,15 +48,32 @@ p3:
     jmp p_loop
 p4:
     cmp ax, 4
+    jg p_above4
     mov r9, [r12 + 18h]
+    dec ax
+    jmp p_loop
+p_above4:
+    push r14
+    push r15
+    mov r14w, ax
+    imul r14, 08h
+    sub r14, 08h
+    mov r15, [r12 + r14] ; move n-th parameter (above 5) into r15
+    add r14, 10h ;make up for the two pushes above
+    mov [rsp+r14], r15
+    pop r15
+    pop r14
     dec ax
     jmp p_loop
 to_call:
     call r11
-    pop r13
+
+
     pop r12
     pop r11
     pop rax
+    mov [rsp+08h], r13
+    pop r13
     ret
 
 VM_Call ENDP
