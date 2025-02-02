@@ -20,7 +20,7 @@
 
 extern "C"
 {
-    void VM_Call(UINT callAddress, UINT numParameters); //asm stub for VM_CALL opcode since we can't inline
+    void VM_Call(UINT callAddress, UINT numParameters, UINT* parameters); //asm stub for VM_CALL opcode since we can't inline - we pass any parameters as an array 
 }
 
 #else
@@ -49,7 +49,7 @@ enum class VM_Opcode : UINT //these can be randomized at runtime on each instanc
     VM_GET_TOP_STACK,
 
     VM_CALL, //basic __cdecl in x86, x64 only currently works with no parameters in function, but will be fixed soon
-   
+
     VM_JL,
     VM_JLE,
     VM_JG,
@@ -80,8 +80,8 @@ public:
 
     ~VirtualMachine()
     {
-		if (stack != nullptr)
-			delete[] stack;
+        if (stack != nullptr)
+            delete[] stack;
     }
 
     void SetStackSize(UINT newSize)
@@ -135,9 +135,9 @@ public:
             VM_Opcode vm_opcode = *(VM_Opcode*)ip;
             ip += sizeof(UINT);
 
-        #ifdef USING_OBFUSCATE
+#ifdef USING_OBFUSCATE
             vm_opcode = (VM_Opcode)((UINT)vm_opcode DEOBFUSCATE);
-        #endif
+#endif
 
             switch (vm_opcode)
             {
@@ -147,7 +147,7 @@ public:
                 ip += sizeof(UINT);
             }  break;
 
-              
+
             case VM_Opcode::VM_POP:
                 sp--;
                 break;
@@ -187,9 +187,9 @@ public:
 
                 float a = 0;
                 memcpy((void*)&a, (const void*)&stack[--sp], sizeof(float));
-                
+
                 float c = a + b;
-		memcpy((void*)&stack[sp], &c, sizeof(float));
+                memcpy((void*)&stack[sp], &c, sizeof(float));
             }break;
 
             case VM_Opcode::VM_FL_SUB:
@@ -224,11 +224,11 @@ public:
                 float a = 0;
                 memcpy((void*)&a, (const void*)&stack[--sp], sizeof(float));
 
-		if (b == 0)
-		{
-			std::cerr << "Division by zero error in bytecode!" << std::endl;
-			return false;
-		}
+                if (b == 0)
+                {
+                    std::cerr << "Division by zero error in bytecode!" << std::endl;
+                    return false;
+                }
 
                 float c = a / b;
                 memcpy((void*)&stack[sp], &c, sizeof(float));
@@ -266,7 +266,8 @@ public:
             {
                 UINT varAddress = *(UINT*)ip;
                 ip += sizeof(UINT);
-                *(UINT*)varAddress = stack[sp];
+                memcpy((void*)varAddress, (const void*)&stack[sp], sizeof(UINT));
+                //*(UINT*)varAddress = stack[sp];
             }break;
 
             case VM_Opcode::VM_CMP: //how do we best implement this, given that someone could pass in two class objects with overloaded comparison operators?
@@ -276,37 +277,45 @@ public:
 
                 if (a == b)
                 {
-					cmp_flag = ComparisonFlag::Equal;
-				}
-				else if (a < b)
-				{
-					cmp_flag = ComparisonFlag::Less;
-				}
+                    cmp_flag = ComparisonFlag::Equal;
+                }
+                else if (a < b)
+                {
+                    cmp_flag = ComparisonFlag::Less;
+                }
                 else
                 {
                     cmp_flag = ComparisonFlag::Greater;
                 }
 
             }break;
-                
+
             case VM_Opcode::VM_JMP_OFFSET:
             {
-				int offset = *(int*)ip;
+                int offset = *(int*)ip;
                 ip += (sizeof(UINT) + offset);
             }break;
 
             case VM_Opcode::VM_CALL: //x86 works okay, however in x64, functions with parameters are not supported yet, this will be added shortly
             {
                 UINT numParameters = *(UINT*)ip;
-				ip += sizeof(UINT);
+                ip += sizeof(UINT);
                 UINT callAddress = *(UINT*)ip;
 
 #ifdef _M_X64  
-                VM_Call(callAddress, numParameters); //parameters need to correctly go into rcx, rdx, r8, r9, [rsp+...]
+                UINT* parameters = new UINT[numParameters];
+
+                for (int i = 0; i < numParameters; i++)
+                {
+                    memcpy((void*)&parameters[i], (const void*)&(stack[sp - numParameters + i]), sizeof(UINT));
+                }
+
+                VM_Call(callAddress, numParameters, parameters); //parameters need to correctly go into rcx, rdx, r8, r9, [rsp+...]
+                delete[] parameters;
 #else
                 for (int i = 0; i < numParameters; i++) //x86 cdecl calling convention, push parameters onto stack then call
                 {
-					UINT parameter = stack[sp - numParameters + i];
+                    UINT parameter = stack[sp - numParameters + i];
 
                     __asm { push parameter }
                 }
@@ -325,9 +334,9 @@ public:
 
             case VM_Opcode::VM_STDOUT:
             {
-				UINT textAddress = *(UINT*)ip;
-				ip += sizeof(UINT);
-				std::cout << (const char*)textAddress << std::endl;
+                UINT textAddress = *(UINT*)ip;
+                ip += sizeof(UINT);
+                std::cout << (const char*)textAddress << std::endl;
             }break;
 
             case VM_Opcode::VM_NOP: //do nothing
@@ -337,9 +346,9 @@ public:
                 i = executeSize;
                 break;
 
-			case VM_Opcode::VM_DBG_BREAK:
-				__debugbreak();
-				break;
+            case VM_Opcode::VM_DBG_BREAK:
+                __debugbreak();
+                break;
 
             default: //opcode unknown
                 break;
@@ -348,8 +357,8 @@ public:
 
         ip = 0;
 
-		for (int i = 0; i < MAX_REGISTERS; i++)
-			registers[i] = 0;
+        for (int i = 0; i < MAX_REGISTERS; i++)
+            registers[i] = 0;
 
         return true;
     }

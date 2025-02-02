@@ -118,11 +118,12 @@ void Virtualized_StdOut()
 }
 
 /*
-    Virtualized_CalledRoutine - routine to be called by Virtualized_CallRoutine
+    Virtualized_CalledRoutine - routine to be called by Virtualized_CallRoutine to prove that VM_CALL opcode works
 */
-void Virtualized_CalledRoutine(int val) //routine called by Virtualized_CallRoutine
+template<typename ...Args>
+void Virtualized_CalledRoutine(Args ... vals) //routine called by Virtualized_CallRoutine
 {
-    cout << "Hello from called routine - parameter val=" << val << endl;
+    ((cout << "Hello from called routine - parameter val=" << vals << endl), ...);
 }
 
 /*
@@ -130,14 +131,23 @@ void Virtualized_CalledRoutine(int val) //routine called by Virtualized_CallRout
 */
 void Virtualized_CallRoutine()
 {
-    UINT a = 1000; //example parameter to be used in `Virtualized_CalledRoutine` to show that VM_CALL works
-    UINT callAddress = (UINT) & Virtualized_CalledRoutine;
+    UINT a = 1000; //example parameters to be used in `Virtualized_CalledRoutine`
+    UINT b = 2000;
+    UINT c = 3000;
+    UINT d = 4000;
+
+    using CalledRoutineType = void(*)(UINT, UINT, UINT, UINT); //for the sake of testing different # of parameters, we'll use a function template /w parameter pack
+    CalledRoutineType funcPtr_pack = &Virtualized_CalledRoutine<UINT, UINT, UINT, UINT>; //forward declare a function pointer since we're using parameter pack, otherwise we will get a compile error
+    UINT callAddress = (UINT) funcPtr_pack;
 
 #ifdef USING_OBFUSCATE
     UINT bytecode[] //while less space efficient, using default int size for each element instead of uint8_t allow us to pass local variables into the bytecode directly
     {
         (UINT)VM_Opcode::VM_PUSH OBFUSCATE, a,
-        (UINT)VM_Opcode::VM_CALL OBFUSCATE, 1, callAddress, //1 parameter
+        (UINT)VM_Opcode::VM_PUSH OBFUSCATE, b,
+        (UINT)VM_Opcode::VM_PUSH OBFUSCATE, c,
+        (UINT)VM_Opcode::VM_PUSH OBFUSCATE, d,
+        (UINT)VM_Opcode::VM_CALL OBFUSCATE, 4, callAddress, //2 parameters
         (UINT)VM_Opcode::VM_END_FUNC OBFUSCATE
     };
 #else
