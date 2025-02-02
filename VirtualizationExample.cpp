@@ -135,7 +135,7 @@ void Virtualized_CallRoutine()
     UINT b = 2000;
     UINT c = 3000;
     UINT d = 4000;
-    UINT e = 5000; //n-th parameter should go into rsp+20 + n*8
+    UINT e = 5000; //n-th parameter above 4 should go into rsp+20 + n*8
     UINT f = 6000;
 
     using CalledRoutineType = void(*)(UINT, UINT, UINT, UINT, UINT, UINT); //for the sake of testing different # of parameters, we'll use a function template /w parameter pack
