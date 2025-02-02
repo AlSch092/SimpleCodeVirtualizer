@@ -12,17 +12,50 @@ VM_Jmp ENDP
 
 ; rcx = call addr
 ; rdx = num parameters
-; r8 = parameter 1
-; r9 = parameter 2
-; TODO - find some clever way to handle any number of parameters, possibly need to put all function parameters into an array then pass the array to this routine and loop using num_parameters
+; r8 = parameter list
 VM_Call PROC
 
     push rax
-    mov rax, rcx ; move callAddress into rax, shift all parameters into correct registers
+    push r11
+    push r12
+    push r13
+    mov r11, rcx ; move callAddress into rax, shift all parameters into correct registers
+    mov eax, edx ; move num parameters into ax
+    mov r13d, eax
+    mov r12, r8 ;copy parameter list into r12 since we may overwrite r8
     mov rcx, r8
     mov rdx, r9
 
-    call rax
+p_loop:
+    cmp eax, 0  ;if 0 parameters, jmp to call routine
+    je to_call
+    cmp ax, 1
+    jne p2
+    mov rcx, [r12]
+    dec ax
+    jmp p_loop
+p2:
+    cmp ax, 2
+    jne p3
+    mov rdx, [r12+08h]
+    dec ax
+    jmp p_loop
+p3:
+    cmp ax, 3
+    jne p4
+    mov r8, [r12 + 10h]
+    dec ax
+    jmp p_loop
+p4:
+    cmp ax, 4
+    mov r9, [r12 + 18h]
+    dec ax
+    jmp p_loop
+to_call:
+    call r11
+    pop r13
+    pop r12
+    pop r11
     pop rax
     ret
 
